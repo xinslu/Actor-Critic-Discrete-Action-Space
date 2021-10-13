@@ -7,6 +7,7 @@ import tensorflow_probability as tfp
 import os
 import tensorflow.keras as keras
 from tensorflow.keras.layers import Dense
+import matplotlib.pyplot as plt
 
 class Agent:
     def __init__(self, alpha=0.0003, gamma=0.99, n_actions=2):
@@ -35,10 +36,10 @@ class Agent:
         print("Loaded Models")
 
     def learn(self, state, reward, state_, done):
-        state = tf.convert_to_tensor([state], dtype=tf.float32)
-        state_ = tf.convert_to_tensor([state_], dtype=tf.float32)
-        reward = tf.convert_to_tensor(reward, dtype=tf.float32) # not fed to NN
-        with tf.GradientTape(persistent=True) as tape:
+        state = tf.convert_to_tensor([state],dtype=tf.float32)
+        state_ = tf.convert_to_tensor([state_],dtype=tf.float32)
+        reward = tf.convert_to_tensor(reward,dtype=tf.float32)
+        with tf.GradientTape() as tape:
             state_value, probs = self.actor_critic(state)
             state_value_, _ = self.actor_critic(state_)
             state_value = tf.squeeze(state_value)
@@ -55,17 +56,17 @@ class Agent:
 
 
 class ActorCriticNetwork(keras.Model):
-    def __init__(self, n_actions, fc1_dims=1024, fc2_dims=512, name='actor_critic', chkpt_dir='tmp/actor_critic'):
+    def __init__(self, n_actions, fc1_dims=1024, fc2_dims=512, name='ActorCritic', chkpt_dir='tmp/ActorCritic'):
         super(ActorCriticNetwork, self).__init__()
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.n_actions = n_actions
         self.model_name = name
         self.checkpoint_dir = chkpt_dir
-        self.checkpoint_file = os.path.join(self.checkpoint_dir, name+'_ac')
+        self.checkpoint_file = os.path.join(self.checkpoint_dir, name)
         self.fc1 = Dense(self.fc1_dims, activation='relu')
         self.fc2 = Dense(self.fc2_dims, activation='relu')
-        self.v = Dense(1, activation=None)
+        self.v = Dense(1, activation='linear')
         self.pi = Dense(n_actions, activation='softmax')
 
     def call(self, state):
@@ -85,7 +86,7 @@ def plot_learning_curve(x, scores, figure_file):
 
 env = gym.make('LunarLander-v2')
 agent = Agent(alpha=1e-5, n_actions=env.action_space.n)
-n_games = 1000
+n_games = 50
 filename = 'LunarLander_Graph.png'
 figure_file = 'plots/' + filename
 best_score = env.reward_range[0]
